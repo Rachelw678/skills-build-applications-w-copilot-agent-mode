@@ -16,52 +16,46 @@ async function seedDatabase() {
   try {
     await connectDatabase();
 
-    const users = await Promise.all([
-      UserModel.findOneAndUpdate(
-        { email: 'maya.chen@example.com' },
-        { $set: { name: 'Maya Chen' } },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-      UserModel.findOneAndUpdate(
-        { email: 'leo.martinez@example.com' },
-        { $set: { name: 'Leo Martinez' } },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-      UserModel.findOneAndUpdate(
-        { email: 'amara.okafor@example.com' },
-        { $set: { name: 'Amara Okafor' } },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-      UserModel.findOneAndUpdate(
-        { email: 'noah.kim@example.com' },
-        { $set: { name: 'Noah Kim' } },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-    ]);
+    const user = UserModel;
+    const users = await Promise.all(
+      [
+        { name: 'Maya Chen', email: 'maya.chen@example.com' },
+        { name: 'Leo Martinez', email: 'leo.martinez@example.com' },
+        { name: 'Amara Okafor', email: 'amara.okafor@example.com' },
+        { name: 'Noah Kim', email: 'noah.kim@example.com' },
+      ].map(async (seedUser) => {
+        const existing = await user.findOne({ email: seedUser.email }).exec();
+        if (existing) {
+          existing.name = seedUser.name;
+          return existing.save();
+        }
+        return user.create(seedUser);
+      }),
+    );
     const [maya, leo, amara, noah] = users;
 
-    const teams = await Promise.all([
-      TeamModel.findOneAndUpdate(
-        { name: 'Morning Movers' },
+    const team = TeamModel;
+    const teams = await Promise.all(
+      [
         {
-          $set: {
-            description: 'A friendly crew building a consistent morning routine.',
-            members: [maya._id, leo._id],
-          },
+          name: 'Morning Movers',
+          description: 'A friendly crew building a consistent morning routine.',
+          members: [maya._id, leo._id],
         },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-      TeamModel.findOneAndUpdate(
-        { name: 'Trail Blazers' },
         {
-          $set: {
-            description: 'Weekend walkers, runners, and outdoor explorers.',
-            members: [amara._id, noah._id],
-          },
+          name: 'Trail Blazers',
+          description: 'Weekend walkers, runners, and outdoor explorers.',
+          members: [amara._id, noah._id],
         },
-        { new: true, upsert: true, runValidators: true },
-      ).exec(),
-    ]);
+      ].map(async (seedTeam) => {
+        const existing = await team.findOne({ name: seedTeam.name }).exec();
+        if (existing) {
+          existing.set(seedTeam);
+          return existing.save();
+        }
+        return team.create(seedTeam);
+      }),
+    );
     const [morningMovers, trailBlazers] = teams;
 
     await Promise.all([
@@ -104,30 +98,44 @@ async function seedDatabase() {
         occurredAt: new Date('2026-10-08T18:00:00.000Z'),
       },
     ];
+    const activity = ActivityModel;
     await Promise.all(
-      activities.map(({ user, activityType, occurredAt, ...activity }) =>
-        ActivityModel.updateOne(
-          { user, activityType, occurredAt },
-          { $set: { user, activityType, occurredAt, ...activity } },
-          { upsert: true, runValidators: true },
-        ).exec(),
-      ),
+      activities.map(async (seedActivity) => {
+        const existing = await activity
+          .findOne({
+            user: seedActivity.user,
+            activityType: seedActivity.activityType,
+            occurredAt: seedActivity.occurredAt,
+          })
+          .exec();
+        if (existing) {
+          existing.set(seedActivity);
+          await existing.save();
+          return;
+        }
+        await activity.create(seedActivity);
+      }),
     );
 
-    const leaderboard = [
+    const leaderboardEntries = [
       { user: maya._id, points: 860, rank: 1, period: 'all-time' },
       { user: amara._id, points: 740, rank: 2, period: 'all-time' },
       { user: leo._id, points: 620, rank: 3, period: 'all-time' },
       { user: noah._id, points: 510, rank: 4, period: 'all-time' },
     ];
+    const leaderboard = LeaderboardModel;
     await Promise.all(
-      leaderboard.map(({ user, ...entry }) =>
-        LeaderboardModel.updateOne(
-          { user, period: entry.period },
-          { $set: { user, ...entry } },
-          { upsert: true, runValidators: true },
-        ).exec(),
-      ),
+      leaderboardEntries.map(async (seedEntry) => {
+        const existing = await leaderboard
+          .findOne({ user: seedEntry.user, period: seedEntry.period })
+          .exec();
+        if (existing) {
+          existing.set(seedEntry);
+          await existing.save();
+          return;
+        }
+        await leaderboard.create(seedEntry);
+      }),
     );
 
     const workouts = [
@@ -156,18 +164,21 @@ async function seedDatabase() {
         instructions: ['Walk at a comfortable pace.', 'Keep your posture tall and shoulders relaxed.', 'Slow down for the final 3 minutes.'],
       },
     ];
+    const workout = WorkoutModel;
     await Promise.all(
-      workouts.map(({ title, ...workout }) =>
-        WorkoutModel.updateOne(
-          { title },
-          { $set: { title, ...workout } },
-          { upsert: true, runValidators: true },
-        ).exec(),
-      ),
+      workouts.map(async (seedWorkout) => {
+        const existing = await workout.findOne({ title: seedWorkout.title }).exec();
+        if (existing) {
+          existing.set(seedWorkout);
+          await existing.save();
+          return;
+        }
+        await workout.create(seedWorkout);
+      }),
     );
 
     console.log(
-      `Database seeding complete: ${users.length} users, ${teams.length} teams, ${activities.length} activities, ${leaderboard.length} leaderboard entries, and ${workouts.length} workouts.`,
+      `Database seeding complete: ${users.length} users, ${teams.length} teams, ${activities.length} activities, ${leaderboardEntries.length} leaderboard entries, and ${workouts.length} workouts.`,
     );
   } catch (error) {
     console.error('Error seeding database:', error);

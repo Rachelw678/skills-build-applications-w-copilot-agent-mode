@@ -6,7 +6,7 @@ export interface Team {
   members: Types.ObjectId[];
 }
 
-const teamSchema = new Schema<Team>(
+const teamSchema: Schema<Team> = new Schema(
   {
     name: { type: String, required: true, unique: true, trim: true },
     description: { type: String, default: '', trim: true },
@@ -16,4 +16,4 @@ const teamSchema = new Schema<Team>(
 );
 
 export const TeamModel =
-  mongoose.models.Team ?? mongoose.model<Team>('Team', teamSchema);
+  mongoose.models.Team ?? mongoose.model('Team', teamSchema);

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express, { type ErrorRequestHandler } from 'express';
 import mongoose from 'mongoose';
 import { connectDatabase } from './config/database.js';
-import { apiRouter } from './routes/api.js';
+import { router } from './routes/api.js';
 import { getApiBaseUrl } from './config/api.js';
 
 dotenv.config();
@@ -22,7 +22,11 @@ app.get('/api/health', (_request, response) => {
   });
 });
 
-app.use('/api', apiRouter);
+app.use(router);
+
+app.use('/api', (_request, response) => {
+  response.status(404).json({ error: 'API route not found' });
+});
 
 const handleApiError: ErrorRequestHandler = (error, _request, response, next) => {
   console.error('OctoFit API request failed:', error);

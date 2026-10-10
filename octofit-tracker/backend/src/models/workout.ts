@@ -9,7 +9,7 @@ export interface Workout {
   instructions: string[];
 }
 
-const workoutSchema = new Schema<Workout>(
+const workoutSchema: Schema<Workout> = new Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
@@ -30,4 +30,4 @@ const workoutSchema = new Schema<Workout>(
 );
 
 export const WorkoutModel =
-  mongoose.models.Workout ?? mongoose.model<Workout>('Workout', workoutSchema);
+  mongoose.models.Workout ?? mongoose.model('Workout', workoutSchema);
